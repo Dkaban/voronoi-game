@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f3ed">
+  <meta name="description" content="An interactive Voronoi playground. Drag cells and watch the shapes change.">
+  <title>Voronoi — An interactive playground</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./script.js" defer></script>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Voronoi home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>voronoi<span class="brand-dot">.</span></span>
+      </a>
+      <span class="topbar-note">An interactive study of space</span>
+    </header>
+
+    <section class="intro" aria-labelledby="title">
+      <p class="eyebrow"><span class="eyebrow-line"></span> A LITTLE EXPERIMENT IN GEOMETRY</p>
+      <h1 id="title">Everything is<br><em>connected.</em></h1>
+      <p class="description">Every shape has its place. Move one, and the others find theirs.</p>
+    </section>
+
+    <section class="playground" aria-label="Interactive Voronoi cells">
+      <div class="canvas-bar">
+        <span class="canvas-label"><span class="live-dot"></span> INTERACTIVE CANVAS</span>
+        <span class="canvas-hint">DRAG ANY CELL TO EXPLORE <span aria-hidden="true">↗</span></span>
+      </div>
+      <canvas id="diagram" aria-label="Voronoi diagram. Drag a colored region with a mouse or your finger to reshape nearby regions."></canvas>
+      <div class="canvas-footer">
+        <span>01 / INFINITE POSSIBILITIES</span>
+        <span>MADE TO BE MOVED <span aria-hidden="true">✳</span></span>
+      </div>
+    </section>
+
+    <footer class="page-footer">
+      <span>A playground for curious minds.</span>
+      <span>JUST DRAG &amp; SEE.</span>
+    </footer>
+  </main>
+</body>
+</html>
