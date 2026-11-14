@@ -9,7 +9,8 @@
   <link rel="stylesheet" href="./styles.css?v=7">
   <script src="./visualizations.js?v=2" defer></script>
   <script src="./robot-demo.js?v=2" defer></script>
-  <script src="./script.js?v=7" defer></script>
+  <script src="./robot-swarm.js?v=1" defer></script>
+  <script src="./script.js?v=8" defer></script>
 </head>
 <body>
   <main class="page">
@@ -51,7 +52,7 @@
           <input id="animation-scrub" type="range" min="0" max="1000" value="0" aria-label="Animation progress">
         </div>
       </div>
-      <p class="playback-note" id="animation-note">Build cells shows polygon clipping. Sweep line illustrates Fortune-style geometry. Show Robots animates three robots around point obstacles using clearance-aware A* routes.</p>
+      <p class="playback-note" id="animation-note">Build cells shows polygon clipping. Sweep line illustrates Fortune-style geometry. Show Robots adds four roaming robots that explore new destinations and dynamically avoid obstacles and each other.</p>
       <div class="diagram-stage" id="diagram-stage">
         <div id="map-tiles" class="map-tiles" aria-hidden="true"></div>
         <canvas id="diagram" aria-label="Voronoi diagram. Drag a colored region with a mouse or your finger to reshape nearby regions."></canvas>
