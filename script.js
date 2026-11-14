@@ -41,6 +41,7 @@
   };
   const buildButton = document.querySelector("#build-play");
   const sweepButton = document.querySelector("#sweep-play");
+  const robotButton = document.querySelector("#robot-play");
   const pauseButton = document.querySelector("#animation-pause");
   const exitButton = document.querySelector("#animation-exit");
   const progressPanel = document.querySelector("#animation-panel");
@@ -50,12 +51,14 @@
   function animationDuration() {
     return animation.type === "build" ?
       Math.max(8500, Math.min(24000, (animation.data?.frames.length || 0) * 85)) :
+      animation.type === "robot" ? Math.max(4200, Math.min(16000, (animation.data?.pathLength || 700) * 10)) :
       10500;
   }
 
   function syncAnimationUI() {
     if (buildButton) buildButton.classList.toggle("is-active", animation.type === "build");
     if (sweepButton) sweepButton.classList.toggle("is-active", animation.type === "sweep");
+    if (robotButton) robotButton.classList.toggle("is-active", animation.type === "robot");
     if (pauseButton) {
       pauseButton.hidden = !animation.type;
       pauseButton.textContent = animation.playing ? "PAUSE" : "RESUME";
@@ -78,13 +81,15 @@
   }
 
   function startAnimation(type) {
-    if (!window.VoronoiVisualization || !width || !height) return;
+    if (!width || !height || (type === "robot" ? !window.RobotNavigationDemo : !window.VoronoiVisualization)) return;
     animationSession++;
     // Each playback uses a snapshot of the current point positions.
     animation.type = type;
-    animation.data = type === "build"
-      ? window.VoronoiVisualization.makeBuildData(points, width, height)
-      : window.VoronoiVisualization.makeSweepData(points, width, height);
+    animation.data = type === "robot"
+      ? window.RobotNavigationDemo.makeDemo(points, width, height)
+      : type === "build"
+        ? window.VoronoiVisualization.makeBuildData(points, width, height)
+        : window.VoronoiVisualization.makeSweepData(points, width, height);
     animation.progress = 0;
     animation.playing = true;
     animation.lastTime = null;
@@ -111,6 +116,7 @@
 
   if (buildButton) buildButton.addEventListener("click", () => startAnimation("build"));
   if (sweepButton) sweepButton.addEventListener("click", () => startAnimation("sweep"));
+  if (robotButton) robotButton.addEventListener("click", () => startAnimation("robot"));
   if (pauseButton) pauseButton.addEventListener("click", () => {
     if (!animation.type) return;
     animationSession++;
@@ -412,11 +418,14 @@
   function draw() {
     frameRequested=false;
     if (animation.type && animation.data && window.VoronoiVisualization) {
-      const message = animation.type === "build"
-        ? window.VoronoiVisualization.drawBuild(ctx, animation.data,
-          animation.progress, width, height, colors, mapEnabled)
-        : window.VoronoiVisualization.drawSweep(ctx, animation.data,
-          animation.progress, width, height, colors, mapEnabled);
+      const message = animation.type === "robot"
+        ? window.RobotNavigationDemo.draw(ctx, animation.data,
+          animation.progress, width, height, mapEnabled)
+        : animation.type === "build"
+          ? window.VoronoiVisualization.drawBuild(ctx, animation.data,
+            animation.progress, width, height, colors, mapEnabled)
+          : window.VoronoiVisualization.drawSweep(ctx, animation.data,
+            animation.progress, width, height, colors, mapEnabled);
       if (progressStatus) progressStatus.textContent = message;
       return;
     }
