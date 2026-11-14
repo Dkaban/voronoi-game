@@ -25,6 +25,7 @@
   let frameRequested = false;
   let mode = "voronoi";
   let interactionMode = "drag";
+  let animationSession = 0;
   const animation = {
     type: null,
     data: null,
@@ -60,6 +61,7 @@
 
   function stopAnimation() {
     if (!animation.type) return;
+    animationSession++;
     animation.type = null;
     animation.data = null;
     animation.playing = false;
@@ -71,6 +73,7 @@
 
   function startAnimation(type) {
     if (!window.VoronoiVisualization || !width || !height) return;
+    animationSession++;
     // Each playback uses a snapshot of the current point positions.
     animation.type = type;
     animation.data = type === "build"
@@ -83,11 +86,12 @@
     hovered = -1;
     syncAnimationUI();
     requestDraw();
-    requestAnimationFrame(tickAnimation);
+    const session = animationSession;
+    requestAnimationFrame(timestamp => tickAnimation(timestamp, session));
   }
 
-  function tickAnimation(timestamp) {
-    if (!animation.type || !animation.playing) return;
+  function tickAnimation(timestamp, session) {
+    if (session !== animationSession || !animation.type || !animation.playing) return;
     if (animation.lastTime !== null) {
       animation.progress = Math.min(1, animation.progress +
         Math.min(100, timestamp - animation.lastTime) / animationDuration());
@@ -96,7 +100,7 @@
     if (animation.progress >= 1) animation.playing = false;
     syncAnimationUI();
     requestDraw();
-    if (animation.playing) requestAnimationFrame(tickAnimation);
+    if (animation.playing) requestAnimationFrame(time => tickAnimation(time, session));
   }
 
   if (buildButton) buildButton.addEventListener("click", () => startAnimation("build"));
@@ -107,7 +111,7 @@
     animation.playing = !animation.playing;
     animation.lastTime = null;
     syncAnimationUI();
-    if (animation.playing) requestAnimationFrame(tickAnimation);
+    if (animation.playing) requestAnimationFrame(time => tickAnimation(time, animationSession));
     requestDraw();
   });
   if (exitButton) exitButton.addEventListener("click", stopAnimation);
