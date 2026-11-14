@@ -115,19 +115,22 @@
     ctx.restore();
   }
 
-  function drawBuild(ctx, data, progress, width, height, colors) {
+  function drawBuild(ctx, data, progress, width, height, colors, mapEnabled = false) {
     const frameIndex = Math.min(data.frames.length - 1,
       Math.floor(progress * data.frames.length));
     const frame = data.frames[frameIndex];
     if (!frame) return "No points to construct";
 
-    ctx.fillStyle = "#f0efe9";
-    ctx.fillRect(0, 0, width, height);
+    ctx.clearRect(0, 0, width, height);
+    if (!mapEnabled) {
+      ctx.fillStyle = "#f0efe9";
+      ctx.fillRect(0, 0, width, height);
+    }
     for (let i = 0; i < frame.site; i++) {
-      fillPolygon(ctx, data.cells[i], colors[i % colors.length]);
+      fillPolygon(ctx, data.cells[i], colors[i % colors.length], mapEnabled ? .42 : 1);
     }
 
-    fillPolygon(ctx, frame.polygon, colors[frame.site % colors.length], .82);
+    fillPolygon(ctx, frame.polygon, colors[frame.site % colors.length], mapEnabled ? .42 : .82);
     if (frame.other !== -1) {
       drawBisector(ctx, data.sites[frame.site],
         data.sites[frame.other], width, height);
@@ -224,15 +227,18 @@
     ctx.restore();
   }
 
-  function drawSweep(ctx, data, progress, width, height, colors) {
+  function drawSweep(ctx, data, progress, width, height, colors, mapEnabled = false) {
     const directrix = -20 + (height + 65) * progress;
     const active = new Set();
     data.sites.forEach((site, i) => {
       if (site.y <= directrix) active.add(i);
     });
 
-    ctx.fillStyle = "#f0efe9";
-    ctx.fillRect(0, 0, width, height);
+    ctx.clearRect(0, 0, width, height);
+    if (!mapEnabled) {
+      ctx.fillStyle = "#f0efe9";
+      ctx.fillRect(0, 0, width, height);
+    }
 
     // Show how the partition changes as each site reaches the directrix.
     // This is a sweep visualization; the finished cell engine stays unchanged.
@@ -242,7 +248,7 @@
     ctx.clip();
     for (const i of active) {
       fillPolygon(ctx, computeCell(data.sites, i, width, height, active),
-        colors[i % colors.length], .86);
+        colors[i % colors.length], mapEnabled ? .42 : .86);
     }
     ctx.restore();
 
