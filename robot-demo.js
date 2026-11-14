@@ -43,7 +43,7 @@
     get length() { return this.values.length; }
   }
 
-  function makeDemo(points, width, height) {
+  function makeDemo(points, width, height, options = {}) {
     const obstacles = points.map(p => ({x: p.x * width, y: p.y * height}));
     const minDim = Math.min(width, height);
     const obstacleRadius = Math.max(9, Math.min(23, minDim * .037));
@@ -77,13 +77,15 @@
 
     function anchor(atRight) {
       const preferredX = atRight ? Math.max(1, cols - 3) : Math.min(cols - 2, 2);
+      const preferredY = Math.max(0, Math.min(1,
+        atRight ? (options.goalFraction ?? .5) : (options.startFraction ?? .5))) * (rows - 1);
       let best = -1, score = Infinity;
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
           const id = row * cols + col;
           if (!passable[id]) continue;
           const deltaX = Math.abs(col - preferredX);
-          const deltaY = Math.abs(row - (rows - 1) / 2);
+          const deltaY = Math.abs(row - preferredY);
           const penalty = Math.max(0, blockedDistance * 1.7 - clearance[id]) / blockedDistance;
           const value = deltaX * 5 + deltaY + penalty * 2;
           if (value < score) { score = value; best = id; }
@@ -330,5 +332,104 @@
         Math.round(progress * 100) + "%";
   }
 
-  window.RobotNavigationDemo = {makeDemo, draw};
+
+  // Multiple independently planned robot routes drawn over the existing diagram.
+  // Obstacles are the diagram's sites, and the map (when enabled) is only imagery.
+  function makeFleet(points, width, height) {
+    const settings = [
+      {startFraction: .18, goalFraction: .22, color: "#1d6b52", name: "R1", delay: 0},
+      {startFraction: .50, goalFraction: .55, color: "#275f94", name: "R2", delay: 1300},
+      {startFraction: .82, goalFraction: .79, color: "#94513e", name: "R3", delay: 2700}
+    ];
+    return settings.map(setting => ({
+      ...setting,
+      route: makeDemo(points, width, height, setting)
+    }));
+  }
+
+  function drawFleet(ctx, fleet, elapsedMs) {
+    if (!fleet.length) return;
+    const base = fleet[0].route;
+    ctx.save();
+    // Shared point obstacles, with dashed clearance boundaries.
+    for (const o of base.obstacles) {
+      ctx.beginPath();
+      ctx.arc(o.x, o.y, base.blockedDistance, 0, TAU);
+      ctx.fillStyle = "rgba(145, 63, 50, .07)";
+      ctx.fill();
+      ctx.setLineDash([4, 5]);
+      ctx.lineWidth = 1.15;
+      ctx.strokeStyle = "rgba(153, 65, 52, .44)";
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.arc(o.x, o.y, base.obstacleRadius, 0, TAU);
+      ctx.fillStyle = "rgba(165, 85, 66, .40)";
+      ctx.fill();
+    }
+
+    for (const robot of fleet) {
+      const data = robot.route;
+      if (!data.found) continue;
+      ctx.save();
+      // Dotted planned path; robot moves independently along it.
+      drawPath(ctx, data.path);
+      ctx.lineWidth = 2.7;
+      ctx.lineJoin = "round";
+      ctx.setLineDash([7, 7]);
+      ctx.strokeStyle = robot.color;
+      ctx.globalAlpha = .70;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.setLineDash([]);
+      const duration = Math.max(4500, data.pathLength * 10);
+      const phase = ((elapsedMs - robot.delay) / duration);
+      // Ping-pong at the ends rather than teleporting between endpoints.
+      const folded = ((phase % 2) + 2) % 2;
+      const progress = folded <= 1 ? folded : 2 - folded;
+      const position = interpolate(data, progress);
+      const returning = folded > 1;
+      ctx.translate(position.x, position.y);
+      ctx.rotate(position.angle + (returning ? Math.PI : 0));
+      ctx.beginPath();
+      ctx.arc(0, 0, data.robotRadius + 9, 0, TAU);
+      ctx.fillStyle = "rgba(255,255,255,.48)";
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(0, 0, data.robotRadius + 5, 0, TAU);
+      ctx.strokeStyle = robot.color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 0, data.robotRadius + 1, 0, TAU);
+      ctx.fillStyle = robot.color;
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#ffffff";
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(3, -4);
+      ctx.lineTo(data.robotRadius + 7, 0);
+      ctx.lineTo(3, 4);
+      ctx.closePath();
+      ctx.fillStyle = "#ffffff";
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.font = "bold 10px Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#ffffff";
+      ctx.strokeStyle = robot.color;
+      ctx.lineWidth = 5;
+      ctx.lineJoin = "round";
+      ctx.strokeText(robot.name, position.x, position.y - data.robotRadius - 19);
+      ctx.fillText(robot.name, position.x, position.y - data.robotRadius - 19);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  window.RobotNavigationDemo = {makeDemo, draw, makeFleet, drawFleet};
 })();
