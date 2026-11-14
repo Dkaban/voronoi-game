@@ -107,6 +107,7 @@
   if (sweepButton) sweepButton.addEventListener("click", () => startAnimation("sweep"));
   if (pauseButton) pauseButton.addEventListener("click", () => {
     if (!animation.type) return;
+    animationSession++;
     if (animation.progress >= 1) animation.progress = 0;
     animation.playing = !animation.playing;
     animation.lastTime = null;
@@ -117,6 +118,7 @@
   if (exitButton) exitButton.addEventListener("click", stopAnimation);
   if (progressInput) progressInput.addEventListener("input", () => {
     if (!animation.type) return;
+    animationSession++;
     animation.progress = Number(progressInput.value) / 1000;
     animation.playing = false;
     animation.lastTime = null;
