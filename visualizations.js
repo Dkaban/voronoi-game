@@ -9,7 +9,7 @@
   const TAU = Math.PI * 2;
 
   function pixelSites(points, width, height) {
-    return points.map(p => ({x: p.x * width, y: p.y * height}));
+    return points.map(p => ({x: p.x * width, y: p.y * height, w: (p.weight || 0) * Math.min(width, height) ** 2}));
   }
 
   function rectangle(width, height) {
@@ -40,7 +40,7 @@
     const a = 2 * (other.x - focus.x);
     const b = 2 * (other.y - focus.y);
     const c = other.x * other.x + other.y * other.y -
-      focus.x * focus.x - focus.y * focus.y;
+      focus.x * focus.x - focus.y * focus.y + (focus.w || 0) - (other.w || 0);
     return clipPolygon(polygon, a, b, c);
   }
 
@@ -101,7 +101,9 @@
     const dx = b.x - a.x, dy = b.y - a.y;
     const length = Math.hypot(dx, dy);
     if (length < 1e-5) return;
-    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    const centerOffset = ((a.w || 0) - (b.w || 0)) / (2 * length * length);
+    const mx = (a.x + b.x) / 2 + dx * centerOffset;
+    const my = (a.y + b.y) / 2 + dy * centerOffset;
     const extent = Math.hypot(width, height) * 2;
     const ux = -dy / length, uy = dx / length;
     ctx.save();
@@ -147,7 +149,7 @@
       }
     });
 
-    return "CELL " + (frame.site + 1) + " / " + data.sites.length +
+    return "POWER CELL " + (frame.site + 1) + " / " + data.sites.length +
       (frame.other < 0 ? " · STARTING REGION" : " · CLIPPING AGAINST POINT " + (frame.other + 1));
   }
 
