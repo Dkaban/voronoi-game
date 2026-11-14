@@ -23,6 +23,20 @@
   let dragOffset = {x:0,y:0};
   let hovered = -1;
   let frameRequested = false;
+  const viewToggle = document.querySelector("#view-toggle");
+  const hintText = document.querySelector("#canvas-hint .hint-text");
+  let mode = "voronoi";
+
+  viewToggle.addEventListener("click", () => {
+    mode = mode === "voronoi" ? "delaunay" : "voronoi";
+    viewToggle.textContent = mode === "voronoi" ? "SHOW DELAUNAY ↗" : "SHOW VORONOI ↗";
+    hintText.textContent = mode === "voronoi" ? "DRAG ANY CELL TO EXPLORE" : "DRAG ANY POINT TO EXPLORE";
+    canvas.setAttribute("aria-label", mode === "voronoi"
+      ? "Voronoi diagram. Drag a colored region to reshape nearby regions."
+      : "Delaunay triangulation. Drag a point to reshape the triangles.");
+    hovered = -1;
+    requestDraw();
+  });
 
   function clip(poly, a, b, c) {
     const result = [];
@@ -56,9 +70,98 @@
     return poly;
   }
 
+  // Delaunay triangulation is the geometric dual of the Voronoi diagram.
+  // Bowyer-Watson reconstructs triangles from the same draggable sites.
+  function circumcircle(a, b, c) {
+    const determinant = 2 * (a.x * (b.y - c.y) +
+      b.x * (c.y - a.y) + c.x * (a.y - b.y));
+    if (Math.abs(determinant) < 1e-7) return null;
+
+    const a2 = a.x * a.x + a.y * a.y;
+    const b2 = b.x * b.x + b.y * b.y;
+    const c2 = c.x * c.x + c.y * c.y;
+    const x = (a2 * (b.y - c.y) + b2 * (c.y - a.y) + c2 * (a.y - b.y)) / determinant;
+    const y = (a2 * (c.x - b.x) + b2 * (a.x - c.x) + c2 * (b.x - a.x)) / determinant;
+    return {x, y, r2: (x - a.x) ** 2 + (y - a.y) ** 2};
+  }
+
+  function delaunayTriangles() {
+    const vertices = points.map(p => ({x: p.x * width, y: p.y * height}));
+    const count = vertices.length;
+    const span = Math.max(width, height) * 12;
+    const midX = width / 2, midY = height / 2;
+    vertices.push(
+      {x: midX - 2 * span, y: midY - span},
+      {x: midX, y: midY + 2 * span},
+      {x: midX + 2 * span, y: midY - span}
+    );
+
+    let triangles = [[count, count + 1, count + 2]];
+    for (let i = 0; i < count; i++) {
+      const point = vertices[i];
+
+      // Duplicate sites are not separate triangulation vertices.
+      if (vertices.slice(0, i).some(other =>
+        (other.x - point.x) ** 2 + (other.y - point.y) ** 2 < 0.0625)) continue;
+
+      const boundary = new Map();
+      const remaining = [];
+      for (const triangle of triangles) {
+        const circle = circumcircle(...triangle.map(index => vertices[index]));
+        if (circle &&
+          (point.x - circle.x) ** 2 + (point.y - circle.y) ** 2 <= circle.r2 + 1e-4) {
+          const sides = [
+            [triangle[0], triangle[1]],
+            [triangle[1], triangle[2]],
+            [triangle[2], triangle[0]]
+          ];
+          for (const [a, b] of sides) {
+            const key = a < b ? `${a}:${b}` : `${b}:${a}`;
+            if (boundary.has(key)) boundary.get(key).count++;
+            else boundary.set(key, {a, b, count: 1});
+          }
+        } else {
+          remaining.push(triangle);
+        }
+      }
+
+      triangles = remaining;
+      for (const {a, b, count: shared} of boundary.values()) {
+        const cross = (vertices[b].x - vertices[a].x) * (point.y - vertices[a].y) -
+          (vertices[b].y - vertices[a].y) * (point.x - vertices[a].x);
+        if (shared === 1 && Math.abs(cross) > 1e-7) triangles.push([a, b, i]);
+      }
+    }
+
+    return {vertices, triangles: triangles.filter(triangle =>
+      triangle.every(index => index < count))};
+  }
+
+  function drawDelaunay() {
+    ctx.fillStyle = "#f0efe9";
+    ctx.fillRect(0, 0, width, height);
+
+    const {vertices, triangles} = delaunayTriangles();
+    for (const [a, b, c] of triangles) {
+      ctx.beginPath();
+      ctx.moveTo(vertices[a].x, vertices[a].y);
+      ctx.lineTo(vertices[b].x, vertices[b].y);
+      ctx.lineTo(vertices[c].x, vertices[c].y);
+      ctx.closePath();
+      ctx.globalAlpha = 0.48;
+      ctx.fillStyle = colors[(a * 3 + b * 5 + c * 7) % colors.length];
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = "#71877c";
+      ctx.stroke();
+    }
+  }
+
   function draw() {
     frameRequested=false;
     ctx.clearRect(0,0,width,height);
+    if (mode === "voronoi") {
     for (let i=0;i<points.length;i++) {
       const poly=cell(i);
       if (!poly.length) continue;
@@ -72,6 +175,9 @@
       ctx.strokeStyle="#f6f4ed";
       ctx.stroke();
     }
+    } else {
+      drawDelaunay();
+    }
     for(let i=0;i<points.length;i++){
       const x=points[i].x*width, y=points[i].y*height;
       const active=i===dragging || i===hovered;
@@ -84,6 +190,8 @@
       ctx.fillStyle="#f9f8f2";ctx.fill();
       ctx.lineWidth=1.8;ctx.strokeStyle="#354c41";ctx.stroke();
     }
+    canvas.style.cursor = dragging !== -1 ? "grabbing" :
+      (mode === "voronoi" || hovered !== -1 ? "grab" : "default");
   }
 
   function requestDraw(){
@@ -116,13 +224,14 @@
       const d=dx*dx+dy*dy;
       if(d<dist){dist=d;best=i;}
     });
-    return best;
+    return mode === "delaunay" && dist > 30 * 30 ? -1 : best;
   }
 
   canvas.addEventListener("pointerdown",event=>{
     if(event.button!==0 && event.pointerType==="mouse")return;
     const pos=position(event);
     dragging=nearest(pos.x,pos.y);
+    if (dragging === -1) return;
     hovered=dragging;
     dragOffset={x:points[dragging].x*width-pos.x,y:points[dragging].y*height-pos.y};
     canvas.setPointerCapture(event.pointerId);
