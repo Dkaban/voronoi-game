@@ -93,3 +93,8 @@ h1 em{font-family:Georgia,"Times New Roman",serif;font-weight:400;letter-spacing
 .robots-toggle{border-color:#b5ccb9;background:#edf4ea;color:#315b46}
 .robots-toggle:hover{background:#deecdf}
 .robots-toggle.is-active{background:#295a44;border-color:#295a44;color:#fff}
+
+/* Weighted power diagram points */
+.weighted-button{background:#faeee5;border-color:#e5c6b2;color:#88482f}
+.weighted-button:hover{background:#f5ddcc;border-color:#d6a98e}
+@media(max-width:700px){.canvas-actions{flex-wrap:wrap}.canvas-actions .view-toggle{flex:1 1 auto}}
