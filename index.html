@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f5f3ed">
-  <meta name="description" content="An interactive Voronoi playground. Drag cells and watch the shapes change.">
+  <meta name="description" content="An interactive Voronoi and Delaunay playground. Drag cells and watch the shapes change.">
   <title>Voronoi — An interactive playground</title>
   <link rel="stylesheet" href="./styles.css">
   <script src="./script.js" defer></script>
@@ -25,10 +25,13 @@
       <p class="description">Every shape has its place. Move one, and the others find theirs.</p>
     </section>
 
-    <section class="playground" aria-label="Interactive Voronoi cells">
+    <section class="playground" aria-label="Interactive geometry canvas">
       <div class="canvas-bar">
         <span class="canvas-label"><span class="live-dot"></span> INTERACTIVE CANVAS</span>
-        <span class="canvas-hint">DRAG ANY CELL TO EXPLORE <span aria-hidden="true">↗</span></span>
+        <div class="canvas-actions">
+          <span class="canvas-hint" id="canvas-hint"><span class="hint-text">DRAG ANY CELL TO EXPLORE</span> <span aria-hidden="true">↗</span></span>
+          <button class="view-toggle" id="view-toggle" type="button">SHOW DELAUNAY ↗</button>
+        </div>
       </div>
       <canvas id="diagram" aria-label="Voronoi diagram. Drag a colored region with a mouse or your finger to reshape nearby regions."></canvas>
       <div class="canvas-footer">
