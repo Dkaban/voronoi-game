@@ -33,7 +33,7 @@
     for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
       const i=y*cols+x,p={x:margin+x*dx,y:margin+y*dy};nodes.push(p);
       let d=Infinity;for(const o of world.obstacles)d=Math.min(d,dist(o,p));
-      spacing[i]=d;blocked[i]=d<world.clearance?1:0;
+      spacing[i]=d;blocked[i]=d<world.clearance+4?1:0;
       if(!blocked[i])free.push(i);
     }
     return {cols,rows,nodes,free,blocked,spacing,dx,dy};
