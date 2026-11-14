@@ -47,5 +47,5 @@ h1 em{font-family:Georgia,"Times New Roman",serif;font-weight:400;letter-spacing
   .canvas-actions{width:100%;gap:6px}
   .canvas-actions .view-toggle{flex:1;min-width:0;font-size:9px;letter-spacing:.025em;padding:10px 5px}
 }
-@media(max-width:650px){body{padding:0 17px}.topbar{height:70px}.topbar-note{display:none}.intro{padding:48px 0 38px}.eyebrow{font-size:9px;letter-spacing:.16em;margin-bottom:23px}.description{font-size:14px}.canvas-bar{padding:0 14px;height:46px}.canvas-hint{font-size:8px;letter-spacing:.05em}.canvas-footer{padding:0 13px;font-size:8px}#diagram{height:min(65vh,500px);min-height:340px}.page-footer{font-size:10px}}
+@media(max-width:650px){body{padding:0 17px}.topbar{height:70px}.topbar-note{display:none}.intro{padding:48px 0 38px}.eyebrow{font-size:9px;letter-spacing:.16em;margin-bottom:23px}.description{font-size:14px}.canvas-bar{padding:12px 14px;height:auto;min-height:46px}.canvas-hint{font-size:8px;letter-spacing:.05em}.canvas-footer{padding:0 13px;font-size:8px}#diagram{height:min(65vh,500px);min-height:340px}.page-footer{font-size:10px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important}}
