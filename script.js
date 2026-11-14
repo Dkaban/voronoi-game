@@ -216,11 +216,12 @@
     const viewToggle = addButton("view-toggle", "SHOW DELAUNAY ↗", "diagram-toggle");
     const mapToggle = addButton("map-toggle", "MAP", "map-toggle", viewToggle);
     const addToggle = addButton("add-toggle", "ADD POINTS", "mode-toggle", viewToggle);
+    const weightedButton = addButton("weighted-point-button", "ADD WEIGHTED", "weighted-button", viewToggle);
     const randomizeButton = addButton("randomize-button", "RANDOMIZE", "randomize-button", viewToggle);
-    return {viewToggle, addToggle, randomizeButton, mapToggle, hintElement: actions.querySelector(".canvas-hint")};
+    return {viewToggle, addToggle, weightedButton, randomizeButton, mapToggle, hintElement: actions.querySelector(".canvas-hint")};
   }
 
-  const {viewToggle, addToggle, randomizeButton, mapToggle, hintElement} = ensureControls();
+  const {viewToggle, addToggle, weightedButton, randomizeButton, mapToggle, hintElement} = ensureControls();
 
   // Fixed street-map view; tiles are loaded only while map mode is active.
   // This is a visual background, not a road-distance Voronoi computation.
@@ -311,6 +312,33 @@
     requestDraw();
   });
 
+  // Site weights are in units of (min canvas dimension)^2. Positive weights
+  // increase a site's power-diagram territory relative to weight-zero sites.
+  if (weightedButton) weightedButton.addEventListener("click", () => {
+    if (!width || !height) return;
+    stopAnimation();
+    const padding = .07;
+    let candidate = null;
+    for (let attempt = 0; attempt < 70; attempt++) {
+      const test = {
+        x: padding + Math.random() * (1 - padding * 2),
+        y: padding + Math.random() * (1 - padding * 2)
+      };
+      // Keep sites distinct so the new region is clearly visible.
+      if (points.every(p => Math.hypot((p.x - test.x) * width, (p.y - test.y) * height) >= 36)) {
+        candidate = test;
+        break;
+      }
+    }
+    if (!candidate) return;
+    candidate.weight = .025 + Math.random() * .055;
+    points.push(candidate);
+    dragging = -1;
+    hovered = -1;
+    if (robotsVisible) planRobotFleet();
+    requestDraw();
+  });
+
   if (randomizeButton) randomizeButton.addEventListener("click", () => {
     stopAnimation();
     // Preserve the existing number of points, but spread them to new positions.
@@ -367,7 +395,9 @@
       if (j===index) continue;
       const qx=points[j].x*width, qy=points[j].y*height;
       const a=2*(qx-px), b=2*(qy-py);
-      const c=qx*qx+qy*qy-px*px-py*py;
+      const scale = Math.min(width, height) ** 2;
+      const c=qx*qx+qy*qy-px*px-py*py+
+        ((p.weight || 0) - (points[j].weight || 0)) * scale;
       poly=clip(poly,a,b,c);
     }
     return poly;
@@ -440,12 +470,56 @@
       triangle.every(index => index < count))};
   }
 
+
+  // The dual of a weighted power diagram is a regular triangulation.
+  // For weighted configurations, derive the edges from shared power-cell
+  // boundaries instead of using the ordinary unweighted Bowyer-Watson mesh.
+  function regularEdges() {
+    const scale = Math.min(width, height) ** 2;
+    const sites = points.map(p => ({x:p.x*width, y:p.y*height, w:(p.weight||0)*scale}));
+    const seen = new Set(), edges = [];
+    for (let i = 0; i < sites.length; i++) {
+      const poly = cell(i);
+      if (poly.length < 2) continue;
+      for (let k = 0; k < poly.length; k++) {
+        const a = poly[k], b = poly[(k + 1) % poly.length];
+        if (Math.hypot(a.x-b.x,a.y-b.y) < 1) continue;
+        const mx=(a.x+b.x)*.5,my=(a.y+b.y)*.5;
+        const reference=(mx-sites[i].x)**2+(my-sites[i].y)**2-sites[i].w;
+        for (let j=0; j<sites.length; j++) {
+          if (i===j) continue;
+          const other=(mx-sites[j].x)**2+(my-sites[j].y)**2-sites[j].w;
+          if (Math.abs(reference-other) > .02) continue;
+          const key=Math.min(i,j)+":"+Math.max(i,j);
+          if (!seen.has(key)) {
+            seen.add(key);
+            edges.push([i,j]);
+          }
+          break;
+        }
+      }
+    }
+    return {sites,edges};
+  }
+
   function drawDelaunay() {
     if (!mapEnabled) {
       ctx.fillStyle = "#f0efe9";
       ctx.fillRect(0, 0, width, height);
     }
 
+    if (points.some(p => (p.weight || 0) > 0)) {
+      const {sites, edges} = regularEdges();
+      ctx.lineWidth = 1.7;
+      ctx.strokeStyle = "#526d62";
+      for (const [a,b] of edges) {
+        ctx.beginPath();
+        ctx.moveTo(sites[a].x, sites[a].y);
+        ctx.lineTo(sites[b].x, sites[b].y);
+        ctx.stroke();
+      }
+      return;
+    }
     const {vertices, triangles} = delaunayTriangles();
     for (const [a, b, c] of triangles) {
       ctx.beginPath();
@@ -511,6 +585,25 @@
       ctx.beginPath();ctx.arc(x,y,4.5,0,TAU);
       ctx.fillStyle="#f9f8f2";ctx.fill();
       ctx.lineWidth=1.8;ctx.strokeStyle="#354c41";ctx.stroke();
+
+      if (points[i].weight) {
+        // Distinct halo and numeric strength distinguish weighted sites.
+        ctx.beginPath();
+        ctx.arc(x, y, 10, 0, TAU);
+        ctx.lineWidth=1.8;
+        ctx.strokeStyle="#b45434";
+        ctx.stroke();
+        ctx.font="bold 11px Arial, sans-serif";
+        ctx.textBaseline="middle";
+        ctx.textAlign="left";
+        const label="W "+(points[i].weight*100).toFixed(1);
+        const labelX=x+14, labelY=y-15;
+        ctx.lineWidth=3;
+        ctx.strokeStyle="rgba(249,248,242,.95)";
+        ctx.strokeText(label,labelX,labelY);
+        ctx.fillStyle="#844125";
+        ctx.fillText(label,labelX,labelY);
+      }
     }
     canvas.style.cursor = interactionMode === "add" ? "crosshair" : dragging !== -1 ? "grabbing" :
       (mode === "voronoi" || hovered !== -1 ? "grab" : "default");
