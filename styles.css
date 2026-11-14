@@ -88,3 +88,8 @@ h1 em{font-family:Georgia,"Times New Roman",serif;font-weight:400;letter-spacing
 .robot-button{border-color:#b5ccb9;background:#edf4ea;color:#315b46}
 .robot-button:hover{background:#deecdf}
 .robot-button.is-active{background:#295a44;border-color:#295a44;color:white}
+
+/* Persistent robot visualization toggle */
+.robots-toggle{border-color:#b5ccb9;background:#edf4ea;color:#315b46}
+.robots-toggle:hover{background:#deecdf}
+.robots-toggle.is-active{background:#295a44;border-color:#295a44;color:#fff}
