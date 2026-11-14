@@ -6,11 +6,11 @@
   <meta name="theme-color" content="#f5f3ed">
   <meta name="description" content="An interactive Voronoi and Delaunay playground. Move, add, and randomize points.">
   <title>Voronoi — An interactive playground</title>
-  <link rel="stylesheet" href="./styles.css?v=7">
-  <script src="./visualizations.js?v=2" defer></script>
+  <link rel="stylesheet" href="./styles.css?v=8">
+  <script src="./visualizations.js?v=3" defer></script>
   <script src="./robot-demo.js?v=2" defer></script>
   <script src="./robot-swarm.js?v=2" defer></script>
-  <script src="./script.js?v=8" defer></script>
+  <script src="./script.js?v=9" defer></script>
 </head>
 <body>
   <main class="page">
@@ -34,6 +34,7 @@
         <div class="canvas-actions">
           <span class="canvas-hint" id="canvas-hint"><span class="hint-text">DRAG ANY CELL TO EXPLORE</span> <span aria-hidden="true">↗</span></span>
           <button class="view-toggle mode-toggle" id="add-toggle" type="button" aria-pressed="false">ADD POINTS</button>
+          <button class="view-toggle weighted-button" id="weighted-point-button" type="button" title="Add a point with randomized influence">+ WEIGHTED POINT</button>
           <button class="view-toggle randomize-button" id="randomize-button" type="button">RANDOMIZE</button>
           <button class="view-toggle map-toggle" id="map-toggle" type="button" aria-pressed="false" aria-label="Show street map">MAP</button>
           <button class="view-toggle diagram-toggle" id="view-toggle" type="button">SHOW DELAUNAY ↗</button>
@@ -52,7 +53,7 @@
           <input id="animation-scrub" type="range" min="0" max="1000" value="0" aria-label="Animation progress">
         </div>
       </div>
-      <p class="playback-note" id="animation-note">Build cells shows polygon clipping. Sweep line illustrates Fortune-style geometry. Show Robots adds four roaming robots that explore new destinations and dynamically avoid obstacles and each other.</p>
+      <p class="playback-note" id="animation-note">Build cells shows polygon clipping. Sweep line illustrates Fortune-style geometry. Weighted points create larger power-diagram regions. Build Cells shows clipping; Sweep Line illustrates unweighted Fortune-style geometry. Show Robots adds four roaming agents.</p>
       <div class="diagram-stage" id="diagram-stage">
         <div id="map-tiles" class="map-tiles" aria-hidden="true"></div>
         <canvas id="diagram" aria-label="Voronoi diagram. Drag a colored region with a mouse or your finger to reshape nearby regions."></canvas>
