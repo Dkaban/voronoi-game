@@ -23,14 +23,45 @@
   let dragOffset = {x:0,y:0};
   let hovered = -1;
   let frameRequested = false;
-  const viewToggle = document.querySelector("#view-toggle");
-  const hintText = document.querySelector("#canvas-hint .hint-text");
   let mode = "voronoi";
 
-  viewToggle.addEventListener("click", () => {
+  // A previously cached HTML page can be paired with the latest script.
+  // Recover the missing controls instead of crashing before the first frame.
+  function ensureControls() {
+    const bar = document.querySelector(".canvas-bar");
+    let actions = document.querySelector(".canvas-actions");
+    if (!actions && bar) {
+      actions = document.createElement("div");
+      actions.className = "canvas-actions";
+      const oldHint = bar.querySelector(".canvas-hint");
+      if (oldHint) actions.appendChild(oldHint);
+      bar.appendChild(actions);
+    }
+    if (!actions) return {button: null, hint: null};
+    let button = actions.querySelector("#view-toggle");
+    if (!button) {
+      button = document.createElement("button");
+      button.id = "view-toggle";
+      button.type = "button";
+      button.className = "view-toggle";
+      button.textContent = "SHOW DELAUNAY ↗";
+      // Fallback appearance when a stale stylesheet has been cached.
+      button.style.cssText = "background:#284d40;color:#fff;border:0;border-radius:6px;padding:10px 15px;cursor:pointer;font-size:10px;font-weight:700;white-space:nowrap;";
+      actions.appendChild(button);
+    }
+    return {button, hint: actions.querySelector(".canvas-hint")};
+  }
+
+  const {button: viewToggle, hint: hintElement} = ensureControls();
+  if (viewToggle) viewToggle.addEventListener("click", () => {
     mode = mode === "voronoi" ? "delaunay" : "voronoi";
     viewToggle.textContent = mode === "voronoi" ? "SHOW DELAUNAY ↗" : "SHOW VORONOI ↗";
-    hintText.textContent = mode === "voronoi" ? "DRAG ANY CELL TO EXPLORE" : "DRAG ANY POINT TO EXPLORE";
+    if (hintElement) {
+      const hintText = hintElement.querySelector(".hint-text");
+      const message = mode === "voronoi" ? "DRAG ANY CELL TO EXPLORE" : "DRAG ANY POINT TO EXPLORE";
+      if (hintText) hintText.textContent = message;
+      else hintElement.textContent = message + " ↗";
+    }
     canvas.setAttribute("aria-label", mode === "voronoi"
       ? "Voronoi diagram. Drag a colored region to reshape nearby regions."
       : "Delaunay triangulation. Drag a point to reshape the triangles.");
