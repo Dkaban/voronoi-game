@@ -25,6 +25,101 @@
   let frameRequested = false;
   let mode = "voronoi";
   let interactionMode = "drag";
+  const animation = {
+    type: null,
+    data: null,
+    progress: 0,
+    playing: false,
+    lastTime: null
+  };
+  const buildButton = document.querySelector("#build-play");
+  const sweepButton = document.querySelector("#sweep-play");
+  const pauseButton = document.querySelector("#animation-pause");
+  const exitButton = document.querySelector("#animation-exit");
+  const progressPanel = document.querySelector("#animation-panel");
+  const progressInput = document.querySelector("#animation-scrub");
+  const progressStatus = document.querySelector("#animation-status");
+
+  function animationDuration() {
+    return animation.type === "build" ?
+      Math.max(8500, Math.min(24000, (animation.data?.frames.length || 0) * 85)) :
+      10500;
+  }
+
+  function syncAnimationUI() {
+    if (buildButton) buildButton.classList.toggle("is-active", animation.type === "build");
+    if (sweepButton) sweepButton.classList.toggle("is-active", animation.type === "sweep");
+    if (pauseButton) {
+      pauseButton.hidden = !animation.type;
+      pauseButton.textContent = animation.playing ? "PAUSE" : "RESUME";
+    }
+    if (exitButton) exitButton.hidden = !animation.type;
+    if (progressPanel) progressPanel.hidden = !animation.type;
+    if (progressInput) progressInput.value = String(Math.round(animation.progress * 1000));
+  }
+
+  function stopAnimation() {
+    if (!animation.type) return;
+    animation.type = null;
+    animation.data = null;
+    animation.playing = false;
+    animation.lastTime = null;
+    animation.progress = 0;
+    syncAnimationUI();
+    requestDraw();
+  }
+
+  function startAnimation(type) {
+    if (!window.VoronoiVisualization || !width || !height) return;
+    // Each playback uses a snapshot of the current point positions.
+    animation.type = type;
+    animation.data = type === "build"
+      ? window.VoronoiVisualization.makeBuildData(points, width, height)
+      : window.VoronoiVisualization.makeSweepData(points, width, height);
+    animation.progress = 0;
+    animation.playing = true;
+    animation.lastTime = null;
+    dragging = -1;
+    hovered = -1;
+    syncAnimationUI();
+    requestDraw();
+    requestAnimationFrame(tickAnimation);
+  }
+
+  function tickAnimation(timestamp) {
+    if (!animation.type || !animation.playing) return;
+    if (animation.lastTime !== null) {
+      animation.progress = Math.min(1, animation.progress +
+        Math.min(100, timestamp - animation.lastTime) / animationDuration());
+    }
+    animation.lastTime = timestamp;
+    if (animation.progress >= 1) animation.playing = false;
+    syncAnimationUI();
+    requestDraw();
+    if (animation.playing) requestAnimationFrame(tickAnimation);
+  }
+
+  if (buildButton) buildButton.addEventListener("click", () => startAnimation("build"));
+  if (sweepButton) sweepButton.addEventListener("click", () => startAnimation("sweep"));
+  if (pauseButton) pauseButton.addEventListener("click", () => {
+    if (!animation.type) return;
+    if (animation.progress >= 1) animation.progress = 0;
+    animation.playing = !animation.playing;
+    animation.lastTime = null;
+    syncAnimationUI();
+    if (animation.playing) requestAnimationFrame(tickAnimation);
+    requestDraw();
+  });
+  if (exitButton) exitButton.addEventListener("click", stopAnimation);
+  if (progressInput) progressInput.addEventListener("input", () => {
+    if (!animation.type) return;
+    animation.progress = Number(progressInput.value) / 1000;
+    animation.playing = false;
+    animation.lastTime = null;
+    syncAnimationUI();
+    requestDraw();
+  });
+
 
   // Create missing controls if cached HTML is older than this script.
   function ensureControls() {
@@ -88,6 +183,7 @@
   }
 
   if (viewToggle) viewToggle.addEventListener("click", () => {
+    stopAnimation();
     mode = mode === "voronoi" ? "delaunay" : "voronoi";
     dragging = -1;
     hovered = -1;
@@ -96,6 +192,7 @@
   });
 
   if (addToggle) addToggle.addEventListener("click", () => {
+    stopAnimation();
     interactionMode = interactionMode === "drag" ? "add" : "drag";
     dragging = -1;
     hovered = -1;
@@ -104,6 +201,7 @@
   });
 
   if (randomizeButton) randomizeButton.addEventListener("click", () => {
+    stopAnimation();
     // Preserve the existing number of points, but spread them to new positions.
     const randomized = [];
     const padding = 0.055;
@@ -253,6 +351,15 @@
 
   function draw() {
     frameRequested=false;
+    if (animation.type && animation.data && window.VoronoiVisualization) {
+      const message = animation.type === "build"
+        ? window.VoronoiVisualization.drawBuild(ctx, animation.data,
+          animation.progress, width, height, colors)
+        : window.VoronoiVisualization.drawSweep(ctx, animation.data,
+          animation.progress, width, height, colors);
+      if (progressStatus) progressStatus.textContent = message;
+      return;
+    }
     ctx.clearRect(0,0,width,height);
     if (mode === "voronoi") {
     for (let i=0;i<points.length;i++) {
@@ -294,6 +401,7 @@
   }
 
   function resize(){
+    if (animation.type) stopAnimation();
     const rect=canvas.getBoundingClientRect();
     width=rect.width;height=rect.height;
     if(!width || !height)return;
@@ -321,6 +429,7 @@
   }
 
   canvas.addEventListener("pointerdown",event=>{
+    if (animation.type) return;
     if(event.button!==0 && event.pointerType==="mouse")return;
     const pos=position(event);
     if (interactionMode === "add") {
@@ -345,7 +454,7 @@
     requestDraw();
   });
   canvas.addEventListener("pointermove",event=>{
-    if (interactionMode === "add") return;
+    if (animation.type || interactionMode === "add") return;
     const pos=position(event);
     if(dragging!==-1){
       const margin=3;
