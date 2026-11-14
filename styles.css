@@ -77,3 +77,9 @@ h1 em{font-family:Georgia,"Times New Roman",serif;font-weight:400;letter-spacing
 .map-toggle{background:#f5f6f0;border-color:#d5ded3;color:#3b5549}
 .map-toggle:hover{background:#e4eae0;border-color:#b4c6b7}
 .map-toggle.is-active{background:#3f6856;border-color:#3f6856;color:#fff}
+
+
+@media(max-width:520px){
+  .canvas-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+  .canvas-actions .view-toggle{width:100%;white-space:normal;line-height:1.25;min-height:34px}
+}
