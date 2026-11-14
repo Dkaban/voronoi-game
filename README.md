@@ -1,3 +1,3 @@
 # Voronoi
 
-A simple interactive Voronoi playground. Drag a cell and watch the surrounding pattern change.
+An interactive playground for Voronoi cells and Delaunay triangles. Drag to reshape the geometry.
