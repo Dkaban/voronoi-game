@@ -31,6 +31,53 @@
   const mapAttribution = document.querySelector("#map-attribution");
   const mapLocation = {latitude: 52.3731, longitude: 4.8922, zoom: 15}; // central Amsterdam
 
+  let robotsVisible = false;
+  let robotFleet = [];
+  let robotElapsedMs = 0;
+  let robotLastTimestamp = null;
+  let robotFramePending = false;
+  const robotToggle = document.querySelector("#robots-toggle");
+
+  function planRobotFleet() {
+    if (!window.RobotNavigationDemo || !width || !height) return;
+    robotFleet = window.RobotNavigationDemo.makeFleet(points, width, height);
+  }
+
+  function robotTick(timestamp) {
+    robotFramePending = false;
+    if (!robotsVisible) return;
+    if (robotLastTimestamp !== null) {
+      robotElapsedMs += Math.min(100, Math.max(0, timestamp - robotLastTimestamp));
+    }
+    robotLastTimestamp = timestamp;
+    requestDraw();
+    scheduleRobotFrame();
+  }
+
+  function scheduleRobotFrame() {
+    if (robotsVisible && !robotFramePending) {
+      robotFramePending = true;
+      requestAnimationFrame(robotTick);
+    }
+  }
+
+  if (robotToggle) robotToggle.addEventListener("click", () => {
+    robotsVisible = !robotsVisible;
+    if (robotsVisible) {
+      robotElapsedMs = 0;
+      robotLastTimestamp = null;
+      planRobotFleet();
+    } else {
+      robotFleet = [];
+      robotLastTimestamp = null;
+    }
+    robotToggle.textContent = robotsVisible ? "HIDE ROBOTS" : "SHOW ROBOTS";
+    robotToggle.classList.toggle("is-active", robotsVisible);
+    robotToggle.setAttribute("aria-pressed", String(robotsVisible));
+    scheduleRobotFrame();
+    requestDraw();
+  });
+
   let animationSession = 0;
   const animation = {
     type: null,
@@ -288,6 +335,7 @@
     });
     dragging = -1;
     hovered = -1;
+    if (robotsVisible) planRobotFleet();
     requestDraw();
   });
 
@@ -449,6 +497,9 @@
     } else {
       drawDelaunay();
     }
+    if (robotsVisible && robotFleet.length && !animation.type && dragging === -1 && window.RobotNavigationDemo) {
+      window.RobotNavigationDemo.drawFleet(ctx, robotFleet, robotElapsedMs);
+    }
     for(let i=0;i<points.length;i++){
       const x=points[i].x*width, y=points[i].y*height;
       const active=i===dragging || i===hovered;
@@ -481,6 +532,10 @@
     canvas.height=Math.round(height*dpr);
     ctx.setTransform(dpr,0,0,dpr,0,0);
     updateMapTiles();
+    if (robotsVisible) {
+      robotLastTimestamp = null;
+      planRobotFleet();
+    }
     requestDraw();
   }
 
@@ -515,6 +570,7 @@
         y: Math.max(0.005, Math.min(0.995, pos.y / height))
       });
       hovered = -1;
+      if (robotsVisible) planRobotFleet();
       requestDraw();
       return;
     }
@@ -539,7 +595,11 @@
     }
   });
   function release(){
-    if(dragging!==-1){dragging=-1;requestDraw();}
+    if(dragging!==-1){
+      dragging=-1;
+      if (robotsVisible) planRobotFleet();
+      requestDraw();
+    }
   }
   canvas.addEventListener("pointerup",release);
   canvas.addEventListener("pointercancel",release);
