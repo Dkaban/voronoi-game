@@ -24,9 +24,9 @@
   let hovered = -1;
   let frameRequested = false;
   let mode = "voronoi";
+  let interactionMode = "drag";
 
-  // A previously cached HTML page can be paired with the latest script.
-  // Recover the missing controls instead of crashing before the first frame.
+  // Create missing controls if cached HTML is older than this script.
   function ensureControls() {
     const bar = document.querySelector(".canvas-bar");
     let actions = document.querySelector(".canvas-actions");
@@ -37,37 +37,99 @@
       if (oldHint) actions.appendChild(oldHint);
       bar.appendChild(actions);
     }
-    if (!actions) return {button: null, hint: null};
-    let button = actions.querySelector("#view-toggle");
-    if (!button) {
-      button = document.createElement("button");
-      button.id = "view-toggle";
-      button.type = "button";
-      button.className = "view-toggle";
-      button.textContent = "SHOW DELAUNAY ↗";
-      // Fallback appearance when a stale stylesheet has been cached.
-      button.style.cssText = "background:#284d40;color:#fff;border:0;border-radius:6px;padding:10px 15px;cursor:pointer;font-size:10px;font-weight:700;white-space:nowrap;";
-      actions.appendChild(button);
+    if (!actions) return {};
+
+    function addButton(id, text, className, before = null) {
+      let button = actions.querySelector("#" + id);
+      if (!button) {
+        button = document.createElement("button");
+        button.id = id;
+        button.type = "button";
+        button.className = "view-toggle " + className;
+        button.textContent = text;
+        if (before) actions.insertBefore(button, before);
+        else actions.appendChild(button);
+      }
+      return button;
     }
-    return {button, hint: actions.querySelector(".canvas-hint")};
+
+    const viewToggle = addButton("view-toggle", "SHOW DELAUNAY ↗", "diagram-toggle");
+    const addToggle = addButton("add-toggle", "ADD POINTS", "mode-toggle", viewToggle);
+    const randomizeButton = addButton("randomize-button", "RANDOMIZE", "randomize-button", viewToggle);
+    return {viewToggle, addToggle, randomizeButton, hintElement: actions.querySelector(".canvas-hint")};
   }
 
-  const {button: viewToggle, hint: hintElement} = ensureControls();
-  if (viewToggle) viewToggle.addEventListener("click", () => {
-    mode = mode === "voronoi" ? "delaunay" : "voronoi";
-    viewToggle.textContent = mode === "voronoi" ? "SHOW DELAUNAY ↗" : "SHOW VORONOI ↗";
+  const {viewToggle, addToggle, randomizeButton, hintElement} = ensureControls();
+
+  function syncControls() {
+    if (viewToggle) {
+      viewToggle.textContent = mode === "voronoi" ? "SHOW DELAUNAY ↗" : "SHOW VORONOI ↗";
+      viewToggle.setAttribute("aria-label", mode === "voronoi" ? "Switch to Delaunay diagram" : "Switch to Voronoi diagram");
+    }
+    if (addToggle) {
+      const adding = interactionMode === "add";
+      addToggle.textContent = adding ? "DRAG MODE" : "ADD POINTS";
+      addToggle.classList.toggle("is-active", adding);
+      addToggle.setAttribute("aria-pressed", String(adding));
+      addToggle.setAttribute("aria-label", adding ? "Switch to drag mode" : "Switch to add points mode");
+    }
     if (hintElement) {
       const hintText = hintElement.querySelector(".hint-text");
-      const message = mode === "voronoi" ? "DRAG ANY CELL TO EXPLORE" : "DRAG ANY POINT TO EXPLORE";
+      const message = interactionMode === "add" ? "CLICK OR TAP TO ADD A POINT" :
+        mode === "voronoi" ? "DRAG ANY CELL TO EXPLORE" : "DRAG ANY POINT TO EXPLORE";
       if (hintText) hintText.textContent = message;
       else hintElement.textContent = message + " ↗";
     }
-    canvas.setAttribute("aria-label", mode === "voronoi"
-      ? "Voronoi diagram. Drag a colored region to reshape nearby regions."
-      : "Delaunay triangulation. Drag a point to reshape the triangles.");
+    canvas.setAttribute("aria-label", interactionMode === "add"
+      ? "Tap or click the canvas to add a point to the " + mode + " diagram."
+      : mode === "voronoi"
+        ? "Voronoi diagram. Drag a region to reshape nearby cells."
+        : "Delaunay diagram. Drag a point to reshape connected triangles.");
+  }
+
+  if (viewToggle) viewToggle.addEventListener("click", () => {
+    mode = mode === "voronoi" ? "delaunay" : "voronoi";
+    dragging = -1;
+    hovered = -1;
+    syncControls();
+    requestDraw();
+  });
+
+  if (addToggle) addToggle.addEventListener("click", () => {
+    interactionMode = interactionMode === "drag" ? "add" : "drag";
+    dragging = -1;
+    hovered = -1;
+    syncControls();
+    requestDraw();
+  });
+
+  if (randomizeButton) randomizeButton.addEventListener("click", () => {
+    // Preserve the existing number of points, but spread them to new positions.
+    const randomized = [];
+    const padding = 0.055;
+    const minDistance = Math.min(26, Math.min(width, height) * 0.045);
+    for (let i = 0; i < points.length; i++) {
+      let candidate;
+      for (let attempt = 0; attempt < 40; attempt++) {
+        candidate = {
+          x: padding + Math.random() * (1 - padding * 2),
+          y: padding + Math.random() * (1 - padding * 2)
+        };
+        if (randomized.every(p => Math.hypot((p.x - candidate.x) * width,
+          (p.y - candidate.y) * height) >= minDistance)) break;
+      }
+      randomized.push(candidate);
+    }
+    randomized.forEach((p, i) => {
+      points[i].x = p.x;
+      points[i].y = p.y;
+    });
+    dragging = -1;
     hovered = -1;
     requestDraw();
   });
+
+  syncControls();
 
   function clip(poly, a, b, c) {
     const result = [];
@@ -221,7 +283,7 @@
       ctx.fillStyle="#f9f8f2";ctx.fill();
       ctx.lineWidth=1.8;ctx.strokeStyle="#354c41";ctx.stroke();
     }
-    canvas.style.cursor = dragging !== -1 ? "grabbing" :
+    canvas.style.cursor = interactionMode === "add" ? "crosshair" : dragging !== -1 ? "grabbing" :
       (mode === "voronoi" || hovered !== -1 ? "grab" : "default");
   }
 
@@ -261,6 +323,20 @@
   canvas.addEventListener("pointerdown",event=>{
     if(event.button!==0 && event.pointerType==="mouse")return;
     const pos=position(event);
+    if (interactionMode === "add") {
+      if (!width || !height) return;
+      // Avoid coincident sites, which cannot form independent Voronoi cells.
+      const tooClose = points.some(p => Math.hypot(p.x * width - pos.x,
+        p.y * height - pos.y) < 9);
+      if (tooClose) return;
+      points.push({
+        x: Math.max(0.005, Math.min(0.995, pos.x / width)),
+        y: Math.max(0.005, Math.min(0.995, pos.y / height))
+      });
+      hovered = -1;
+      requestDraw();
+      return;
+    }
     dragging=nearest(pos.x,pos.y);
     if (dragging === -1) return;
     hovered=dragging;
@@ -269,6 +345,7 @@
     requestDraw();
   });
   canvas.addEventListener("pointermove",event=>{
+    if (interactionMode === "add") return;
     const pos=position(event);
     if(dragging!==-1){
       const margin=3;
