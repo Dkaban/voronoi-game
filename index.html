@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#f5f3ed">
   <meta name="description" content="An interactive Voronoi and Delaunay playground. Move, add, and randomize points.">
   <title>Voronoi — An interactive playground</title>
-  <link rel="stylesheet" href="./styles.css?v=6">
+  <link rel="stylesheet" href="./styles.css?v=7">
   <script src="./visualizations.js?v=2" defer></script>
-  <script src="./robot-demo.js?v=1" defer></script>
-  <script src="./script.js?v=6" defer></script>
+  <script src="./robot-demo.js?v=2" defer></script>
+  <script src="./script.js?v=7" defer></script>
 </head>
 <body>
   <main class="page">
@@ -42,7 +42,7 @@
         <div class="playback-buttons">
           <button class="playback-button" id="build-play" type="button">▶ BUILD CELLS</button>
           <button class="playback-button" id="sweep-play" type="button">▶ SWEEP LINE</button>
-          <button class="playback-button robot-button" id="robot-play" type="button">▶ ROBOT DEMO</button>
+          <button class="playback-button robots-toggle" id="robots-toggle" type="button" aria-pressed="false">SHOW ROBOTS</button>
           <button class="playback-button playback-pause" id="animation-pause" type="button" hidden>PAUSE</button>
           <button class="playback-button playback-exit" id="animation-exit" type="button" hidden>EXIT</button>
         </div>
@@ -51,7 +51,7 @@
           <input id="animation-scrub" type="range" min="0" max="1000" value="0" aria-label="Animation progress">
         </div>
       </div>
-      <p class="playback-note" id="animation-note">Build cells shows polygon clipping. Sweep line illustrates Fortune-style geometry. Robot demo plans a clearance-aware route around point obstacles.</p>
+      <p class="playback-note" id="animation-note">Build cells shows polygon clipping. Sweep line illustrates Fortune-style geometry. Show Robots animates three robots around point obstacles using clearance-aware A* routes.</p>
       <div class="diagram-stage" id="diagram-stage">
         <div id="map-tiles" class="map-tiles" aria-hidden="true"></div>
         <canvas id="diagram" aria-label="Voronoi diagram. Drag a colored region with a mouse or your finger to reshape nearby regions."></canvas>
