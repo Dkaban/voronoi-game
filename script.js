@@ -25,6 +25,12 @@
   let frameRequested = false;
   let mode = "voronoi";
   let interactionMode = "drag";
+  let mapEnabled = false;
+  const mapTiles = document.querySelector("#map-tiles");
+  const mapStage = document.querySelector("#diagram-stage");
+  const mapAttribution = document.querySelector("#map-attribution");
+  const mapLocation = {latitude: 52.3731, longitude: 4.8922, zoom: 15}; // central Amsterdam
+
   let animationSession = 0;
   const animation = {
     type: null,
@@ -155,14 +161,60 @@
     }
 
     const viewToggle = addButton("view-toggle", "SHOW DELAUNAY ↗", "diagram-toggle");
+    const mapToggle = addButton("map-toggle", "MAP", "map-toggle", viewToggle);
     const addToggle = addButton("add-toggle", "ADD POINTS", "mode-toggle", viewToggle);
     const randomizeButton = addButton("randomize-button", "RANDOMIZE", "randomize-button", viewToggle);
-    return {viewToggle, addToggle, randomizeButton, hintElement: actions.querySelector(".canvas-hint")};
+    return {viewToggle, addToggle, randomizeButton, mapToggle, hintElement: actions.querySelector(".canvas-hint")};
   }
 
-  const {viewToggle, addToggle, randomizeButton, hintElement} = ensureControls();
+  const {viewToggle, addToggle, randomizeButton, mapToggle, hintElement} = ensureControls();
+
+  // Fixed street-map view; tiles are loaded only while map mode is active.
+  // This is a visual background, not a road-distance Voronoi computation.
+  function updateMapTiles() {
+    if (!mapEnabled || !mapTiles || !width || !height) return;
+    const tileSize = 256, zoom = mapLocation.zoom, count = 2 ** zoom;
+    const lat = mapLocation.latitude * Math.PI / 180;
+    const centerX = ((mapLocation.longitude + 180) / 360) * count * tileSize;
+    const centerY = ((1 - Math.log(Math.tan(lat) + 1 / Math.cos(lat)) / Math.PI) / 2) * count * tileSize;
+    const left = centerX - width / 2, top = centerY - height / 2;
+    const minX = Math.floor(left / tileSize), maxX = Math.floor((left + width) / tileSize);
+    const minY = Math.floor(top / tileSize), maxY = Math.floor((top + height) / tileSize);
+    const fragment = document.createDocumentFragment();
+    for (let y = minY; y <= maxY; y++) {
+      if (y < 0 || y >= count) continue;
+      for (let x = minX; x <= maxX; x++) {
+        const image = document.createElement("img");
+        image.alt = "";
+        image.decoding = "async";
+        image.loading = "lazy";
+        image.draggable = false;
+        image.src = "https://tile.openstreetmap.org/" + zoom + "/" + ((x % count + count) % count) + "/" + y + ".png";
+        image.style.left = (x * tileSize - left) + "px";
+        image.style.top = (y * tileSize - top) + "px";
+        fragment.appendChild(image);
+      }
+    }
+    mapTiles.replaceChildren(fragment);
+  }
+
+  if (mapToggle) mapToggle.addEventListener("click", () => {
+    mapEnabled = !mapEnabled;
+    if (mapStage) mapStage.classList.toggle("map-on", mapEnabled);
+    if (mapAttribution) mapAttribution.hidden = !mapEnabled;
+    if (mapEnabled) updateMapTiles();
+    else if (mapTiles) mapTiles.replaceChildren();
+    syncControls();
+    requestDraw();
+  });
+
 
   function syncControls() {
+    if (mapToggle) {
+      mapToggle.classList.toggle("is-active", mapEnabled);
+      mapToggle.setAttribute("aria-pressed", String(mapEnabled));
+      mapToggle.setAttribute("aria-label", mapEnabled ? "Hide Amsterdam street map" : "Show Amsterdam street map");
+    }
     if (viewToggle) {
       viewToggle.textContent = mode === "voronoi" ? "SHOW DELAUNAY ↗" : "SHOW VORONOI ↗";
       viewToggle.setAttribute("aria-label", mode === "voronoi" ? "Switch to Delaunay diagram" : "Switch to Voronoi diagram");
@@ -335,8 +387,10 @@
   }
 
   function drawDelaunay() {
-    ctx.fillStyle = "#f0efe9";
-    ctx.fillRect(0, 0, width, height);
+    if (!mapEnabled) {
+      ctx.fillStyle = "#f0efe9";
+      ctx.fillRect(0, 0, width, height);
+    }
 
     const {vertices, triangles} = delaunayTriangles();
     for (const [a, b, c] of triangles) {
@@ -345,7 +399,7 @@
       ctx.lineTo(vertices[b].x, vertices[b].y);
       ctx.lineTo(vertices[c].x, vertices[c].y);
       ctx.closePath();
-      ctx.globalAlpha = 0.48;
+      ctx.globalAlpha = mapEnabled ? 0.33 : 0.48;
       ctx.fillStyle = colors[(a * 3 + b * 5 + c * 7) % colors.length];
       ctx.fill();
       ctx.globalAlpha = 1;
@@ -360,9 +414,9 @@
     if (animation.type && animation.data && window.VoronoiVisualization) {
       const message = animation.type === "build"
         ? window.VoronoiVisualization.drawBuild(ctx, animation.data,
-          animation.progress, width, height, colors)
+          animation.progress, width, height, colors, mapEnabled)
         : window.VoronoiVisualization.drawSweep(ctx, animation.data,
-          animation.progress, width, height, colors);
+          animation.progress, width, height, colors, mapEnabled);
       if (progressStatus) progressStatus.textContent = message;
       return;
     }
@@ -376,7 +430,9 @@
       for (let j=1;j<poly.length;j++) ctx.lineTo(poly[j].x,poly[j].y);
       ctx.closePath();
       ctx.fillStyle=colors[i%colors.length];
+      ctx.globalAlpha = mapEnabled ? 0.42 : 1;
       ctx.fill();
+      ctx.globalAlpha = 1;
       ctx.lineWidth=2.25;
       ctx.strokeStyle="#f6f4ed";
       ctx.stroke();
@@ -415,6 +471,7 @@
     canvas.width=Math.round(width*dpr);
     canvas.height=Math.round(height*dpr);
     ctx.setTransform(dpr,0,0,dpr,0,0);
+    updateMapTiles();
     requestDraw();
   }
 
