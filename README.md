@@ -12,6 +12,7 @@ A Voronoi diagram divides an area into regions based on which point is closest. 
 - **Map** to overlay the geometry on real streets in Amsterdam.
 - **Build Cells** to watch Voronoi regions form through polygon clipping.
 - **Sweep Line** to explore a Fortune-style sweep-line visualization, including its beachline and circle events. This is an illustration, not a full Fortune's algorithm implementation.
+- **Robot Demo** to watch a simulated robot plan and follow a clearance-aware A* route around the points, treated as circular obstacles.
 
 The map illustrates straight-line proximity, not driving distance.
 
