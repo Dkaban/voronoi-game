@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#f5f3ed">
   <meta name="description" content="An interactive Voronoi and Delaunay playground. Move, add, and randomize points.">
   <title>Voronoi — An interactive playground</title>
-  <link rel="stylesheet" href="./styles.css?v=4">
-  <script src="./visualizations.js?v=1" defer></script>
-  <script src="./script.js?v=4" defer></script>
+  <link rel="stylesheet" href="./styles.css?v=5">
+  <script src="./visualizations.js?v=2" defer></script>
+  <script src="./script.js?v=5" defer></script>
 </head>
 <body>
   <main class="page">
@@ -33,6 +33,7 @@
           <span class="canvas-hint" id="canvas-hint"><span class="hint-text">DRAG ANY CELL TO EXPLORE</span> <span aria-hidden="true">↗</span></span>
           <button class="view-toggle mode-toggle" id="add-toggle" type="button" aria-pressed="false">ADD POINTS</button>
           <button class="view-toggle randomize-button" id="randomize-button" type="button">RANDOMIZE</button>
+          <button class="view-toggle map-toggle" id="map-toggle" type="button" aria-pressed="false" aria-label="Show street map">MAP</button>
           <button class="view-toggle diagram-toggle" id="view-toggle" type="button">SHOW DELAUNAY ↗</button>
         </div>
       </div>
@@ -49,7 +50,13 @@
         </div>
       </div>
       <p class="playback-note" id="animation-note">Build cells reveals each clipping step. Sweep line visualizes Fortune-style geometry; completed cells still use polygon clipping.</p>
-      <canvas id="diagram" aria-label="Voronoi diagram. Drag a colored region with a mouse or your finger to reshape nearby regions."></canvas>
+      <div class="diagram-stage" id="diagram-stage">
+        <div id="map-tiles" class="map-tiles" aria-hidden="true"></div>
+        <canvas id="diagram" aria-label="Voronoi diagram. Drag a colored region with a mouse or your finger to reshape nearby regions."></canvas>
+        <div class="map-attribution" id="map-attribution" hidden>
+          Amsterdam, Netherlands · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>
+        </div>
+      </div>
       <div class="canvas-footer">
         <span>01 / INFINITE POSSIBILITIES</span>
         <span>MADE TO BE MOVED <span aria-hidden="true">✳</span></span>
