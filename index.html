@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f5f3ed">
-  <meta name="description" content="An interactive Voronoi and Delaunay playground. Drag cells and watch the shapes change.">
+  <meta name="description" content="An interactive Voronoi and Delaunay playground. Move, add, and randomize points.">
   <title>Voronoi — An interactive playground</title>
-  <link rel="stylesheet" href="./styles.css?v=2">
-  <script src="./script.js?v=2" defer></script>
+  <link rel="stylesheet" href="./styles.css?v=3">
+  <script src="./script.js?v=3" defer></script>
 </head>
 <body>
   <main class="page">
@@ -30,7 +30,9 @@
         <span class="canvas-label"><span class="live-dot"></span> INTERACTIVE CANVAS</span>
         <div class="canvas-actions">
           <span class="canvas-hint" id="canvas-hint"><span class="hint-text">DRAG ANY CELL TO EXPLORE</span> <span aria-hidden="true">↗</span></span>
-          <button class="view-toggle" id="view-toggle" type="button">SHOW DELAUNAY ↗</button>
+          <button class="view-toggle mode-toggle" id="add-toggle" type="button" aria-pressed="false">ADD POINTS</button>
+          <button class="view-toggle randomize-button" id="randomize-button" type="button">RANDOMIZE</button>
+          <button class="view-toggle diagram-toggle" id="view-toggle" type="button">SHOW DELAUNAY ↗</button>
         </div>
       </div>
       <canvas id="diagram" aria-label="Voronoi diagram. Drag a colored region with a mouse or your finger to reshape nearby regions."></canvas>
