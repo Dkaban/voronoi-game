@@ -32,22 +32,23 @@
   const mapLocation = {latitude: 52.3731, longitude: 4.8922, zoom: 15}; // central Amsterdam
 
   let robotsVisible = false;
-  let robotFleet = [];
-  let robotElapsedMs = 0;
+  let robotFleet = null;
   let robotLastTimestamp = null;
   let robotFramePending = false;
   const robotToggle = document.querySelector("#robots-toggle");
 
   function planRobotFleet() {
-    if (!window.RobotNavigationDemo || !width || !height) return;
-    robotFleet = window.RobotNavigationDemo.makeFleet(points, width, height);
+    if (!window.RobotSwarm || !width || !height) return;
+    robotFleet = window.RobotSwarm.create(points, width, height, robotFleet);
   }
 
   function robotTick(timestamp) {
     robotFramePending = false;
     if (!robotsVisible) return;
     if (robotLastTimestamp !== null) {
-      robotElapsedMs += Math.min(100, Math.max(0, timestamp - robotLastTimestamp));
+      if (!animation.type && dragging === -1 && robotFleet) {
+        window.RobotSwarm.update(robotFleet, Math.min(100, Math.max(0, timestamp - robotLastTimestamp)) / 1000);
+      }
     }
     robotLastTimestamp = timestamp;
     requestDraw();
@@ -64,11 +65,10 @@
   if (robotToggle) robotToggle.addEventListener("click", () => {
     robotsVisible = !robotsVisible;
     if (robotsVisible) {
-      robotElapsedMs = 0;
       robotLastTimestamp = null;
       planRobotFleet();
     } else {
-      robotFleet = [];
+      robotFleet = null;
       robotLastTimestamp = null;
     }
     robotToggle.textContent = robotsVisible ? "HIDE ROBOTS" : "SHOW ROBOTS";
@@ -497,8 +497,8 @@
     } else {
       drawDelaunay();
     }
-    if (robotsVisible && robotFleet.length && !animation.type && dragging === -1 && window.RobotNavigationDemo) {
-      window.RobotNavigationDemo.drawFleet(ctx, robotFleet, robotElapsedMs);
+    if (robotsVisible && robotFleet && !animation.type && window.RobotSwarm) {
+      window.RobotSwarm.draw(ctx, robotFleet);
     }
     for(let i=0;i<points.length;i++){
       const x=points[i].x*width, y=points[i].y*height;
