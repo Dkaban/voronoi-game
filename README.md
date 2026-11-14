@@ -1,3 +1,3 @@
 # Voronoi
 
-An interactive playground for Voronoi cells and Delaunay triangles. Drag to reshape the geometry.
+An interactive playground for Voronoi cells and Delaunay triangles. Drag, add, or randomize points to reshape the geometry.
