@@ -54,7 +54,7 @@
     if (!oceanWorld || !window.OceanSurvey) return;
     const stats = window.OceanSurvey.stats(oceanWorld);
     if (oceanStats.coverage) oceanStats.coverage.textContent = stats.coverage + "%";
-    if (oceanStats.distance) oceanStats.distance.textContent = stats.distance.toLocaleString() + " m";
+    if (oceanStats.distance) oceanStats.distance.textContent = stats.distance.toLocaleString() + " units";
     if (oceanStats.battery) oceanStats.battery.textContent = stats.battery + "%";
     if (oceanStats.time) {
       const m = Math.floor(stats.elapsed / 60), sec = stats.elapsed % 60;
@@ -130,6 +130,10 @@
       scheduleOceanFrame();
     } else {
       oceanWorld = null;
+      if (robotsVisible) {
+        robotLastTimestamp = null;
+        scheduleRobotFrame();
+      }
     }
     syncOceanControls();
     requestDraw();
