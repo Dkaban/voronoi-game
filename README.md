@@ -13,6 +13,7 @@ A Voronoi diagram divides an area into regions based on which point is closest. 
 - **Build Cells** to watch Voronoi regions form through polygon clipping.
 - **Sweep Line** to explore a Fortune-style sweep-line visualization, including its beachline and circle events. This is an illustration, not a full Fortune's algorithm implementation.
 - **Show Robots / Hide Robots** to watch four robots roam between changing destinations, planning around obstacles and dynamically avoiding each other.
+- **Ocean Mode** to simulate four underwater vehicles surveying Voronoi zones along a fictional coast. Track coverage and battery, and add priority monitoring stations.
 
 The map illustrates straight-line proximity, not driving distance.
 
