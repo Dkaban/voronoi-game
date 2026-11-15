@@ -341,7 +341,11 @@
 
   if (randomizeButton) randomizeButton.addEventListener("click", () => {
     stopAnimation();
-    // Preserve the existing number of points, but spread them to new positions.
+    // Weighted sites exist only when explicitly added. Clear them on randomize,
+    // preserving all ordinary sites before redistributing their positions.
+    for (let i = points.length - 1; i >= 0; i--) {
+      if ((points[i].weight || 0) !== 0) points.splice(i, 1);
+    }
     const randomized = [];
     const padding = 0.055;
     const minDistance = Math.min(26, Math.min(width, height) * 0.045);
