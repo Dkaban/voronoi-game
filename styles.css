@@ -98,3 +98,30 @@ h1 em{font-family:Georgia,"Times New Roman",serif;font-weight:400;letter-spacing
 .weighted-button{background:#faeee5;border-color:#e5c6b2;color:#88482f}
 .weighted-button:hover{background:#f5ddcc;border-color:#d6a98e}
 @media(max-width:700px){.canvas-actions{flex-wrap:wrap}.canvas-actions .view-toggle{flex:1 1 auto}}
+
+
+/* Autonomous ocean survey mission */
+.ocean-toggle{border-color:#87b6c8;background:#e7f2f4;color:#24596b}
+.ocean-toggle:hover{background:#d2e7ed}
+.ocean-toggle.is-active{background:#216578;border-color:#216578;color:#fff}
+.ocean-control{border-color:#9ec8d2;background:#eff7f8;color:#24596b}
+.ocean-control.is-active{background:#d7e9f0}
+.ocean-control[hidden]{display:none}
+.canvas-bar.ocean-active .canvas-actions{opacity:.42;pointer-events:none}
+.playback-toolbar.ocean-active #build-play,
+.playback-toolbar.ocean-active #sweep-play,
+.playback-toolbar.ocean-active #robots-toggle{display:none}
+.ocean-dashboard{background:#143e52;color:#effafa;padding:16px 23px 13px;border-bottom:1px solid #295768}
+.ocean-dashboard[hidden]{display:none}
+.ocean-dashboard-heading{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:10px;font-weight:800;letter-spacing:.13em;color:#a4d5df}
+.ocean-live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#72e0be;margin-right:7px}
+.ocean-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;margin:15px 0 12px}
+.ocean-metrics div{display:flex;flex-direction:column;gap:4px}
+.ocean-metrics strong{font-size:clamp(18px,2.5vw,29px);letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.ocean-metrics span{font-size:9px;letter-spacing:.1em;color:#aad0d6;font-weight:700}
+.ocean-help{font-size:11px;line-height:1.5;color:#c0dce2;margin:0}
+@media(max-width:700px){
+  .ocean-dashboard{padding:14px}
+  .ocean-dashboard-heading{flex-direction:column;align-items:flex-start;font-size:9px}
+  .ocean-metrics{gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}
+}
