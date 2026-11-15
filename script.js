@@ -31,6 +31,135 @@
   const mapAttribution = document.querySelector("#map-attribution");
   const mapLocation = {latitude: 52.3731, longitude: 4.8922, zoom: 15}; // central Amsterdam
 
+  let oceanEnabled = false;
+  let oceanWorld = null;
+  let oceanLastTimestamp = null;
+  let oceanFramePending = false;
+  let oceanStationPlacement = false;
+  let oceanDraggingStation = -1;
+  const oceanToggle = document.querySelector("#ocean-toggle");
+  const oceanPauseButton = document.querySelector("#ocean-pause");
+  const oceanRestartButton = document.querySelector("#ocean-restart");
+  const oceanStationButton = document.querySelector("#ocean-station");
+  const oceanDashboard = document.querySelector("#ocean-dashboard");
+  const oceanHelp = document.querySelector("#ocean-help");
+  const oceanStats = {
+    coverage: document.querySelector("#ocean-coverage"),
+    distance: document.querySelector("#ocean-distance"),
+    battery: document.querySelector("#ocean-battery"),
+    time: document.querySelector("#ocean-time")
+  };
+
+  function refreshOceanDashboard() {
+    if (!oceanWorld || !window.OceanSurvey) return;
+    const stats = window.OceanSurvey.stats(oceanWorld);
+    if (oceanStats.coverage) oceanStats.coverage.textContent = stats.coverage + "%";
+    if (oceanStats.distance) oceanStats.distance.textContent = stats.distance.toLocaleString() + " m";
+    if (oceanStats.battery) oceanStats.battery.textContent = stats.battery + "%";
+    if (oceanStats.time) {
+      const m = Math.floor(stats.elapsed / 60), sec = stats.elapsed % 60;
+      oceanStats.time.textContent = String(m).padStart(2,"0")+":"+String(sec).padStart(2,"0");
+    }
+    if (oceanHelp && stats.complete) {
+      oceanHelp.textContent = "Mission complete. Restart to run another survey.";
+    }
+  }
+
+  function scheduleOceanFrame() {
+    if (oceanEnabled && !oceanFramePending) {
+      oceanFramePending = true;
+      requestAnimationFrame(oceanTick);
+    }
+  }
+
+  function oceanTick(timestamp) {
+    oceanFramePending = false;
+    if (!oceanEnabled || !oceanWorld) return;
+    if (oceanLastTimestamp !== null && !oceanWorld.paused) {
+      window.OceanSurvey.update(oceanWorld, Math.min(100, Math.max(0, timestamp-oceanLastTimestamp))/1000);
+    }
+    oceanLastTimestamp = timestamp;
+    refreshOceanDashboard();
+    requestDraw();
+    scheduleOceanFrame();
+  }
+
+  function syncOceanControls() {
+    if (oceanToggle) {
+      oceanToggle.textContent = oceanEnabled ? "EXIT OCEAN MODE" : "OCEAN MODE";
+      oceanToggle.classList.toggle("is-active", oceanEnabled);
+      oceanToggle.setAttribute("aria-pressed", String(oceanEnabled));
+    }
+    if (oceanDashboard) oceanDashboard.hidden = !oceanEnabled;
+    if (oceanPauseButton) {
+      oceanPauseButton.hidden = !oceanEnabled;
+      oceanPauseButton.textContent = oceanWorld?.paused ? "RESUME MISSION" : "PAUSE MISSION";
+    }
+    if (oceanRestartButton) oceanRestartButton.hidden = !oceanEnabled;
+    if (oceanStationButton) {
+      oceanStationButton.hidden = !oceanEnabled;
+      oceanStationButton.textContent = oceanStationPlacement ? "CANCEL PLACEMENT" : "+ PRIORITY STATION";
+      oceanStationButton.classList.toggle("is-active", oceanStationPlacement);
+    }
+    const bar = document.querySelector(".canvas-bar");
+    if (bar) bar.classList.toggle("ocean-active", oceanEnabled);
+    const playback = document.querySelector(".playback-toolbar");
+    if (playback) playback.classList.toggle("ocean-active", oceanEnabled);
+    const note = document.querySelector("#animation-note");
+    if (note) {
+      note.textContent = oceanEnabled
+        ? "Synthetic coastal survey: four AUVs map Voronoi zones. Click + Priority Station, then click the ocean to prioritize an area. Drag stations to reposition."
+        : "Build Cells demonstrates polygon clipping, Sweep Line illustrates Fortune-style geometry, and Show Robots enables roaming pathfinding.";
+    }
+    canvas.style.cursor = oceanEnabled && oceanStationPlacement ? "crosshair" : "grab";
+  }
+
+  if (oceanToggle) oceanToggle.addEventListener("click", () => {
+    if (!window.OceanSurvey || !width || !height) return;
+    oceanEnabled = !oceanEnabled;
+    oceanLastTimestamp = null;
+    oceanStationPlacement = false;
+    oceanDraggingStation = -1;
+    dragging = -1;
+    hovered = -1;
+    if (oceanEnabled) {
+      stopAnimation();
+      oceanWorld = window.OceanSurvey.create(width,height);
+      if (oceanHelp) oceanHelp.textContent = "Four autonomous vehicles scan separate Voronoi zones. Add a priority station to focus the survey on an area of interest.";
+      refreshOceanDashboard();
+      scheduleOceanFrame();
+    } else {
+      oceanWorld = null;
+    }
+    syncOceanControls();
+    requestDraw();
+  });
+  if (oceanPauseButton) oceanPauseButton.addEventListener("click", () => {
+    if (!oceanWorld) return;
+    oceanWorld.paused = !oceanWorld.paused;
+    oceanLastTimestamp = null;
+    syncOceanControls();
+  });
+  if (oceanRestartButton) oceanRestartButton.addEventListener("click", () => {
+    if (!oceanEnabled || !window.OceanSurvey) return;
+    const stations = oceanWorld?.stations || [];
+    oceanWorld = window.OceanSurvey.create(width,height);
+    for (const station of stations) {
+      window.OceanSurvey.addStation(oceanWorld,station.x,station.y);
+    }
+    oceanStationPlacement = false;
+    oceanLastTimestamp = null;
+    if (oceanHelp) oceanHelp.textContent = "New survey started. Vehicles are surveying their zones.";
+    syncOceanControls();
+    refreshOceanDashboard();
+    requestDraw();
+  });
+  if (oceanStationButton) oceanStationButton.addEventListener("click", () => {
+    if (!oceanWorld) return;
+    oceanStationPlacement = !oceanStationPlacement;
+    syncOceanControls();
+  });
+
   let robotsVisible = false;
   let robotFleet = null;
   let robotLastTimestamp = null;
@@ -45,6 +174,11 @@
   function robotTick(timestamp) {
     robotFramePending = false;
     if (!robotsVisible) return;
+    if (oceanEnabled) {
+      robotLastTimestamp = timestamp;
+      scheduleRobotFrame();
+      return;
+    }
     if (robotLastTimestamp !== null) {
       if (!animation.type && dragging === -1 && robotFleet) {
         window.RobotSwarm.update(robotFleet, Math.min(100, Math.max(0, timestamp - robotLastTimestamp)) / 1000);
@@ -56,7 +190,7 @@
   }
 
   function scheduleRobotFrame() {
-    if (robotsVisible && !robotFramePending) {
+    if (robotsVisible && !robotFramePending && !oceanEnabled) {
       robotFramePending = true;
       requestAnimationFrame(robotTick);
     }
@@ -543,6 +677,10 @@
 
   function draw() {
     frameRequested=false;
+    if (oceanEnabled && oceanWorld && window.OceanSurvey) {
+      window.OceanSurvey.draw(ctx, oceanWorld);
+      return;
+    }
     if (animation.type && animation.data && window.VoronoiVisualization) {
       const message = animation.type === "robot"
         ? window.RobotNavigationDemo.draw(ctx, animation.data,
@@ -629,6 +767,11 @@
     canvas.height=Math.round(height*dpr);
     ctx.setTransform(dpr,0,0,dpr,0,0);
     updateMapTiles();
+    if (oceanEnabled && window.OceanSurvey) {
+      oceanWorld = window.OceanSurvey.create(width, height, oceanWorld);
+      oceanLastTimestamp = null;
+      refreshOceanDashboard();
+    }
     if (robotsVisible) {
       robotLastTimestamp = null;
       planRobotFleet();
@@ -653,6 +796,21 @@
   }
 
   canvas.addEventListener("pointerdown",event=>{
+    if (oceanEnabled && oceanWorld && window.OceanSurvey) {
+      const pos = position(event);
+      const selected = oceanWorld.stations.findIndex(p => Math.hypot(p.x-pos.x,p.y-pos.y)<19);
+      if (selected !== -1) {
+        oceanDraggingStation = selected;
+        canvas.setPointerCapture(event.pointerId);
+      } else if (oceanStationPlacement && window.OceanSurvey.addStation(oceanWorld,pos.x,pos.y)) {
+        oceanStationPlacement = false;
+        syncOceanControls();
+        if (oceanHelp) oceanHelp.textContent = "Priority station deployed. Survey transects have been reprioritized.";
+      }
+      refreshOceanDashboard();
+      requestDraw();
+      return;
+    }
     if (animation.type) return;
     if(event.button!==0 && event.pointerType==="mouse")return;
     const pos=position(event);
@@ -679,6 +837,15 @@
     requestDraw();
   });
   canvas.addEventListener("pointermove",event=>{
+    if (oceanEnabled && oceanWorld) {
+      if (oceanDraggingStation !== -1) {
+        const pos=position(event);
+        if (window.OceanSurvey.moveStation(oceanWorld,oceanDraggingStation,pos.x,pos.y)) {
+          requestDraw();
+        }
+      }
+      return;
+    }
     if (animation.type || interactionMode === "add") return;
     const pos=position(event);
     if(dragging!==-1){
@@ -692,6 +859,13 @@
     }
   });
   function release(){
+    if (oceanDraggingStation !== -1 && oceanWorld) {
+      oceanDraggingStation = -1;
+      window.OceanSurvey.resetRoutes(oceanWorld);
+      refreshOceanDashboard();
+      requestDraw();
+      return;
+    }
     if(dragging!==-1){
       dragging=-1;
       if (robotsVisible) planRobotFleet();
@@ -702,6 +876,7 @@
   canvas.addEventListener("pointercancel",release);
   canvas.addEventListener("lostpointercapture",release);
   canvas.addEventListener("pointerleave",()=>{
+    if (oceanEnabled) return;
     if(dragging===-1){hovered=-1;requestDraw();}
   });
   if("ResizeObserver" in window)new ResizeObserver(resize).observe(canvas);
