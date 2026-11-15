@@ -6,11 +6,12 @@
   <meta name="theme-color" content="#f5f3ed">
   <meta name="description" content="An interactive Voronoi and Delaunay playground. Move, add, and randomize points.">
   <title>Voronoi — An interactive playground</title>
-  <link rel="stylesheet" href="./styles.css?v=8">
+  <link rel="stylesheet" href="./styles.css?v=9">
   <script src="./visualizations.js?v=3" defer></script>
   <script src="./robot-demo.js?v=2" defer></script>
   <script src="./robot-swarm.js?v=2" defer></script>
-  <script src="./script.js?v=10" defer></script>
+  <script src="./ocean-mode.js?v=1" defer></script>
+  <script src="./script.js?v=11" defer></script>
 </head>
 <body>
   <main class="page">
@@ -45,6 +46,10 @@
           <button class="playback-button" id="build-play" type="button">▶ BUILD CELLS</button>
           <button class="playback-button" id="sweep-play" type="button">▶ SWEEP LINE</button>
           <button class="playback-button robots-toggle" id="robots-toggle" type="button" aria-pressed="false">SHOW ROBOTS</button>
+          <button class="playback-button ocean-toggle" id="ocean-toggle" type="button" aria-pressed="false">OCEAN MODE</button>
+          <button class="playback-button ocean-control" id="ocean-pause" type="button" hidden>PAUSE MISSION</button>
+          <button class="playback-button ocean-control" id="ocean-restart" type="button" hidden>RESTART</button>
+          <button class="playback-button ocean-control" id="ocean-station" type="button" hidden>+ PRIORITY STATION</button>
           <button class="playback-button playback-pause" id="animation-pause" type="button" hidden>PAUSE</button>
           <button class="playback-button playback-exit" id="animation-exit" type="button" hidden>EXIT</button>
         </div>
@@ -53,7 +58,20 @@
           <input id="animation-scrub" type="range" min="0" max="1000" value="0" aria-label="Animation progress">
         </div>
       </div>
-      <p class="playback-note" id="animation-note">Build cells shows polygon clipping. Sweep line illustrates Fortune-style geometry. Weighted points create larger power-diagram regions. Build Cells shows clipping; Sweep Line illustrates unweighted Fortune-style geometry. Show Robots adds four roaming agents.</p>
+      <p class="playback-note" id="animation-note">Build Cells demonstrates polygon clipping, Sweep Line illustrates Fortune-style geometry, and Show Robots enables roaming pathfinding.</p>
+      <div class="ocean-dashboard" id="ocean-dashboard" hidden aria-label="Ocean survey mission">
+        <div class="ocean-dashboard-heading">
+          <span><span class="ocean-live-dot"></span> AUTONOMOUS OCEAN SURVEY</span>
+          <span>FICTIONAL COASTAL REGION · SIMULATED DATA</span>
+        </div>
+        <div class="ocean-metrics">
+          <div><strong id="ocean-coverage">0%</strong><span>WEIGHTED COVERAGE</span></div>
+          <div><strong id="ocean-distance">0 m</strong><span>FLEET DISTANCE</span></div>
+          <div><strong id="ocean-battery">100%</strong><span>AVG. BATTERY</span></div>
+          <div><strong id="ocean-time">00:00</strong><span>MISSION TIME</span></div>
+        </div>
+        <p class="ocean-help" id="ocean-help">Four autonomous vehicles scan separate Voronoi zones. Add a priority station to focus the survey on an area of interest.</p>
+      </div>
       <div class="diagram-stage" id="diagram-stage">
         <div id="map-tiles" class="map-tiles" aria-hidden="true"></div>
         <canvas id="diagram" aria-label="Voronoi diagram. Drag a colored region with a mouse or your finger to reshape nearby regions."></canvas>
