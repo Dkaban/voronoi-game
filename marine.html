@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d2431">
+  <meta name="description" content="Marine Lab — a browser-based coastal vessel traffic and navigation simulation.">
+  <title>Marine Lab — Coastal Navigation Simulation</title>
+  <link rel="stylesheet" href="./marine.css?v=1">
+  <script src="./marine.js?v=1" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="masthead">
+      <a class="brand" href="./"><span class="brand-symbol" aria-hidden="true">◈</span> voronoi<span class="brand-dot">.</span></a>
+      <span class="divider" aria-hidden="true"></span>
+      <span class="app-name">MARINE LAB <span class="app-beta">PROTOTYPE</span></span>
+      <a class="nav-home" href="./">← Geometry playground</a>
+    </header>
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <div class="kicker"><span class="status-light"></span> COASTAL VESSEL NAVIGATION / SYNTHETIC ENVIRONMENT</div>
+          <h1>A living view<br>of the <em>water.</em></h1>
+          <p>Explore vessel routing, island avoidance, traffic interactions, and simulated current in a coastal navigation lab.</p>
+        </div>
+        <div class="hero-aside">
+          <span>SCENARIO 001</span>
+          <strong>Harbour approach</strong>
+          <small>1.2 km × 0.78 km simulation area</small>
+          <small>No live AIS or nautical chart data</small>
+        </div>
+      </section>
+      <section class="workspace" aria-label="Marine navigation lab">
+        <div class="toolbar">
+          <div class="toolbar-group">
+            <span class="caps"><span class="pulse-dot"></span> VESSEL TRACKING</span>
+            <button id="sim-toggle" class="control primary" type="button">▶ Start simulation</button>
+            <button id="sim-reset" class="control" type="button">↺ Reset</button>
+            <button id="add-vessel" class="control" type="button">+ Add vessel</button>
+          </div>
+          <div class="toolbar-group secondary-controls">
+            <label class="toggle-wrap"><input id="routes-toggle" type="checkbox" checked> Show routes</label>
+            <label class="current-label" for="current-strength">Current <strong id="current-value">0.6 kn</strong></label>
+            <input id="current-strength" aria-label="Current speed in knots" type="range" min="0" max="2" step="0.1" value="0.6">
+          </div>
+        </div>
+        <div class="chart-stage">
+          <canvas id="marine-canvas" role="img" aria-label="Synthetic coastal map with moving vessels, planned routes and islands"></canvas>
+          <div class="chart-overlay chart-overlay-top"><span class="indicator"></span> <span id="sim-state">PAUSED / READY</span><span class="chart-time" id="clock-value">T + 00:00</span></div>
+          <div class="chart-overlay chart-overlay-bottom"><span>DEMO WATERWAY — NOT FOR NAVIGATION</span><span>N ↑ <span class="north">➤</span></span></div>
+        </div>
+        <div class="replay-bar">
+          <span class="caps">TIME MACHINE</span>
+          <input id="replay-slider" type="range" min="0" max="0" value="0" disabled aria-label="Replay recorded vessel activity">
+          <span id="replay-label">Start simulation to record movement</span>
+        </div>
+        <div class="stats" aria-label="Simulation metrics">
+          <div class="stat"><small>ACTIVE VESSELS</small><strong id="stat-boats">4</strong></div>
+          <div class="stat"><small>ROUTES COMPLETED</small><strong id="stat-routes">0</strong></div>
+          <div class="stat"><small>AVERAGE TRIP</small><strong id="stat-trip">—</strong></div>
+          <div class="stat"><small>CLOSE PASSES</small><strong id="stat-close">0</strong></div>
+          <div class="stat"><small>DISTANCE TRAVELLED</small><strong id="stat-distance">0.0 km</strong></div>
+        </div>
+      </section>
+      <section class="below">
+        <div>
+          <h2>From simulation to digital twin.</h2>
+          <p>Vessels follow A*-planned routes through a fictional coastal basin. They react to nearby traffic, steer around land and shallow-water exclusion zones, and receive new destinations when they arrive.</p>
+          <p>This is an exploratory simulator, <strong>not a live digital twin</strong>. A production marine twin would need actual chart/bathymetry data, AIS or onboard telemetry, current forecasts, calibrated vessel dynamics, and maritime collision regulations.</p>
+        </div>
+        <aside>
+          <span class="caps">WHAT THE MAP SHOWS</span>
+          <div class="legend"><span class="swatch coastline"></span> Land / islands</div>
+          <div class="legend"><span class="swatch shallows"></span> Shallow-water exclusion</div>
+          <div class="legend"><span class="swatch route"></span> Planned route</div>
+          <div class="legend"><span class="swatch port"></span> Harbours / destinations</div>
+          <div class="legend"><span class="swatch vessel"></span> Moving vessels</div>
+        </aside>
+      </section>
+    </main>
+    <footer>MARINE LAB · A VORONOI EXPERIMENT <span>SIMULATED DATA ONLY</span></footer>
+  </div>
+</body>
+</html>
